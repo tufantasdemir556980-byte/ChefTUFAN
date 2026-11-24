@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chef TUFAN</title>
+<style>
+:root{--bg:#f5f0e5;--card:#fffdf8;--ink:#2b2a26;--mute:#7a766b;--acc:#285b45;--acc2:#e8f0ea;--line:#e0dacb;--danger:#b3402f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1c1a;--card:#262723;--ink:#eeeadf;--mute:#9a968a;--acc:#7cc4a0;--acc2:#2a3a31;--line:#3a3b36;--danger:#e57a68}}
+:root[data-theme="dark"]{--bg:#1b1c1a;--card:#262723;--ink:#eeeadf;--mute:#9a968a;--acc:#7cc4a0;--acc2:#2a3a31;--line:#3a3b36;--danger:#e57a68}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Times New Roman",serif;line-height:1.5}
+button,input,textarea,select{font:inherit;color:inherit}
+main{max-width:640px;margin:0 auto;padding:16px 16px 90px}
+h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.5px}
+input,textarea,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+textarea{min-height:110px;resize:vertical}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:6px}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;cursor:pointer}
+.chip.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.item{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
+.item b{display:block;font-size:18px}
+.item small{color:var(--mute)}
+.item .t{flex:1}
+.star{background:none;border:0;font-size:22px;cursor:pointer;color:var(--acc)}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--acc);color:var(--bg);border:0;border-radius:999px;padding:14px 22px;font-size:17px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 16px;cursor:pointer}
+.btn.p{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.btn.d{color:var(--danger)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.empty{text-align:center;color:var(--mute);padding:40px 10px}
+.meta{color:var(--mute);margin-bottom:14px}
+.ing{background:var(--acc2);border-radius:12px;padding:12px 16px;margin:10px 0}
+.ing label{display:flex;gap:10px;padding:4px 0;cursor:pointer}
+.ing input{width:auto;margin:5px 0 0}
+.ing label.done span{text-decoration:line-through;color:var(--mute)}
+.steps{white-space:pre-wrap}
+h2{font-size:19px;margin:18px 0 4px}
+a.back{background:none;border:0;color:var(--acc);font-size:16px;padding:6px 0;cursor:pointer}
+.ph{width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin:4px 0 8px;display:block}.th{width:56px;height:56px;object-fit:cover;border-radius:10px;flex:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.item:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+var KEY="tariflerim_v1",CATS=["Çorba","Ana yemek","Zeytinyağlı","Hamur işi","Tatlı","Salata","Kahvaltı","Diğer"];
+var S={view:"list",q:"",cat:"Tümü",fav:false,id:null,items:[]};
+function load(){try{S.items=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){S.items=[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S.items))}catch(e){alert("Kaydedilemedi: tarayıcı depolamaya izin vermiyor.")}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function go(v,id){S.view=v;S.id=id||null;render();window.scrollTo(0,0)}
+function find(id){return S.items.filter(function(r){return r.id===id})[0]}
+
+function render(){
+  var a=document.getElementById("app");
+  if(S.view==="list")a.innerHTML=listV();
+  else if(S.view==="show")a.innerHTML=showV(find(S.id));
+  else if(S.view==="edit")a.innerHTML=editV(find(S.id));
+  else a.innerHTML=backupV();
+}
+function listV(){
+  var q=S.q.toLowerCase();
+  var l=S.items.filter(function(r){
+    return (S.cat==="Tümü"||r.cat===S.cat)&&(!S.fav||r.fav)&&(!q||(r.title+" "+r.ing).toLowerCase().indexOf(q)>-1)
+  }).sort(function(x,y){return x.title.localeCompare(y.title,"tr")});
+  var h='<h1>Chef TUFAN</h1><div class="meta">Kişisel yemek kitabın · Tariflerini burada sakla</div><input id="q" type="search" placeholder="Tarif ya da malzeme ara" value="'+esc(S.q)+'" oninput="S.q=this.value;keep()">';
+  h+='<div class="chips"><button class="chip'+(S.fav?" on":"")+'" onclick="S.fav=!S.fav;render()">★ Favoriler</button>';
+  ["Tümü"].concat(CATS).forEach(function(c){h+='<button class="chip'+(S.cat===c?" on":"")+'" onclick="S.cat=\''+c+'\';render()">'+c+'</button>'});
+  h+='</div>';
+  if(!l.length)h+='<div class="empty">'+(S.items.length?'Aramana uyan tarif yok.':'Henüz tarif yok. Aşağıdaki “Tarif ekle” düğmesiyle ilk tarifini yaz.')+'</div>';
+  l.forEach(function(r){
+    h+='<div class="item" tabindex="0" onclick="go(\'show\',\''+r.id+'\')">'+(r.img?'<img class="th" src="'+r.img+'" alt="">':'')+'<div class="t"><b>'+esc(r.title)+'</b><small>'+esc(r.cat)+(r.time?' · '+esc(r.time):'')+'</small></div><button class="star" aria-label="Favori" onclick="event.stopPropagation();tog(\''+r.id+'\')">'+(r.fav?'★':'☆')+'</button></div>';
+  });
+  h+='<div class="row"><button class="btn" onclick="go(\'backup\')">Yedekle / geri yükle</button></div>';
+  h+='<button class="fab" onclick="go(\'edit\')">+ Tarif ekle</button>';
+  return h;
+}
+function keep(){var p=document.getElementById("q").selectionStart;render();var e=document.getElementById("q");e.focus();e.setSelectionRange(p,p)}
+function tog(id){var r=find(id);r.fav=!r.fav;save();render()}
+function showV(r){
+  if(!r)return'<div class="empty">Tarif bulunamadı.</div>';
+  var ing=r.ing.split("\n").filter(function(x){return x.trim()}).map(function(x){return'<label><input type="checkbox" onchange="this.parentNode.classList.toggle(\'done\',this.checked)"><span>'+esc(x)+'</span></label>'}).join("");
+  return'<button class="back" onclick="go(\'list\')">‹ Tüm tarifler</button><h1>'+esc(r.title)+'</h1><div class="meta">'+esc(r.cat)+(r.time?' · '+esc(r.time):'')+(r.serv?' · '+esc(r.serv)+' kişilik':'')+'</div>'
+  +(r.img?'<img class="ph" src="'+r.img+'" alt="">':'')+'<h2>Malzemeler</h2><div class="ing">'+(ing||'<small>Malzeme yazılmamış.</small>')+'</div><h2>Yapılışı</h2><div class="steps">'+esc(r.steps)+'</div>'
+  +(r.note?'<h2>Not</h2><div class="steps">'+esc(r.note)+'</div>':'')
+  +'<div class="row"><button class="btn p" onclick="go(\'edit\',\''+r.id+'\')">Düzenle</button><button class="btn d" onclick="del(\''+r.id+'\')">Sil</button></div>';
+}
+function editV(r){
+  r=r||{title:"",cat:"Ana yemek",time:"",serv:"",ing:"",steps:"",note:""};
+  PH=r.img||"";var o=CATS.map(function(c){return'<option'+(c===r.cat?' selected':'')+'>'+c+'</option>'}).join("");
+  return'<button class="back" onclick="go(\''+(S.id?'show':'list')+'\',\''+(S.id||'')+'\')">‹ Vazgeç</button><h1>'+(S.id?'Tarifi düzenle':'Yeni tarif')+'</h1>'
+  +'<input id="f_t" placeholder="Tarif adı" value="'+esc(r.title)+'"><select id="f_c">'+o+'</select>'
+  +'<input id="f_m" placeholder="Süre (ör. 45 dk)" value="'+esc(r.time)+'"><input id="f_s" placeholder="Kaç kişilik" value="'+esc(r.serv)+'">'
+  +'<div id="pv">'+pvH()+'</div><input id="f_p" type="file" accept="image/*" onchange="pick(this)">'
+  +'<textarea id="f_i" placeholder="Malzemeler (her satıra bir malzeme)">'+esc(r.ing)+'</textarea>'
+  +'<textarea id="f_y" placeholder="Yapılışı" style="min-height:160px">'+esc(r.steps)+'</textarea>'
+  +'<textarea id="f_n" placeholder="Not (isteğe bağlı)" style="min-height:60px">'+esc(r.note)+'</textarea>'
+  +'<div class="row"><button class="btn p" onclick="sv()">Kaydet</button></div>';
+}
+function sv(){
+  var t=document.getElementById("f_t").value.trim();
+  if(!t){alert("Tarif adı yazmalısın.");return}
+  var d={title:t,cat:document.getElementById("f_c").value,time:document.getElementById("f_m").value.trim(),serv:document.getElementById("f_s").value.trim(),ing:document.getElementById("f_i").value,steps:document.getElementById("f_y").value,note:document.getElementById("f_n").value,img:PH};
+  var r=S.id&&find(S.id);
+  if(r){for(var k in d)r[k]=d[k]}else{d.id="r"+Date.now();d.fav=false;S.items.push(d);S.id=d.id}
+  save();go("show",S.id);
+}
+var PH="";
+function pvH(){return PH?'<img class="ph" src="'+PH+'" alt=""><button class="btn d" onclick="PH=\'\';document.getElementById(\'pv\').innerHTML=\'\'">Fotoğrafı kaldır</button><div style="height:10px"></div>':''}
+function pick(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){var im=new Image();im.onload=function(){
+    var m=800,w=im.width,h=im.height,s=Math.min(1,m/Math.max(w,h));
+    var c=document.createElement("canvas");c.width=Math.round(w*s);c.height=Math.round(h*s);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    PH=c.toDataURL("image/jpeg",0.72);
+    document.getElementById("pv").innerHTML=pvH();
+  };im.onerror=function(){alert("Fotoğraf okunamadı.")};im.src=fr.result};
+  fr.readAsDataURL(f);
+}
+function del(id){if(confirm("Bu tarif silinsin mi?")){S.items=S.items.filter(function(r){return r.id!==id});save();go("list")}}
+function backupV(){
+  return'<button class="back" onclick="go(\'list\')">‹ Tüm tarifler</button><h1>Yedekle</h1><p class="meta">Tarifler bu cihazın tarayıcısında saklanır. Tarayıcı verisini silersen kaybolur; metni kopyalayıp Notlar’a yapıştırarak yedek al.</p>'
+  +'<textarea id="b" style="min-height:180px">'+esc(JSON.stringify(S.items))+'</textarea>'
+  +'<div class="row"><button class="btn p" onclick="cp()">Kopyala</button><button class="btn" onclick="rs()">Bu metinden geri yükle</button></div>';
+}
+function cp(){var b=document.getElementById("b");b.select();try{document.execCommand("copy");alert("Kopyalandı.")}catch(e){alert("Metni elle kopyala.")}}
+function rs(){
+  try{var d=JSON.parse(document.getElementById("b").value);if(!Array.isArray(d))throw 0;
+    if(confirm(d.length+" tarif yüklenecek, mevcutların yerine geçer. Devam?")){S.items=d;save();go("list")}}
+  catch(e){alert("Metin geçerli bir yedek değil.")}
+}
+load();render();
+</script>
+</body>
+</html>
